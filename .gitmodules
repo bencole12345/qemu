@@ -55,3 +55,6 @@
 [submodule "roms/qboot"]
 	path = roms/qboot
 	url = https://github.com/bonzini/qboot
+[submodule "slirp"]
+	path = slirp
+	url = https://git.qemu.org/git/libslirp.git
