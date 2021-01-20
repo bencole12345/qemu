@@ -7322,7 +7322,7 @@ if test "$pcap" = "yes" ; then
     echo "CONFIG_BPF=y" >> $config_host_mak
   fi
 fi
-if test "$slirp" = "yes" ; then
+if test "$slirp" != "no" ; then
   echo "CONFIG_SLIRP=y" >> $config_host_mak
   echo "CONFIG_SMBD_COMMAND=\"$smbd\"" >> $config_host_mak
   echo "SLIRP_CFLAGS=$slirp_cflags" >> $config_host_mak
