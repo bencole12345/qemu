@@ -132,6 +132,7 @@ trace-events-subdirs += backends/tpm
 trace-events-subdirs += crypto
 trace-events-subdirs += monitor
 ifeq ($(CONFIG_USER_ONLY),y)
+trace-events-subdirs += bsd-user
 trace-events-subdirs += linux-user
 endif
 ifeq ($(CONFIG_BLOCK),y)
@@ -143,7 +144,6 @@ trace-events-subdirs += scsi
 endif
 ifeq ($(CONFIG_SOFTMMU),y)
 trace-events-subdirs += audio
-trace-events-subdirs += bsd-user
 trace-events-subdirs += chardev
 trace-events-subdirs += hw/9pfs
 trace-events-subdirs += hw/acpi
