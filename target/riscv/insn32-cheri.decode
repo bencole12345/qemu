@@ -153,7 +153,7 @@ st_h_cap       1111100  ..... ..... 000 01001 1011011 @r_2source
 st_w_cap       1111100  ..... ..... 000 01010 1011011 @r_2source
 #                                       01011 is st_d_cap for RV64/st_c_cap for RV32
 #                                       01100 is st_c_cap for RV64
-#                                       01101 is reserved
+#                                       01101 is c_st_c_cap for RV64
 #                                       01110 is reserved
 #                                       01111 is reserved
 sc_b_ddc       1111100  ..... ..... 000 10000 1011011 @atom_st_cap_or_ddc
