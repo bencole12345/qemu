@@ -362,6 +362,23 @@ static inline uint32_t get_capreg_hwperms(CPUArchState *env, unsigned regnum)
     tcg_abort();
 }
 
+static inline uint8_t get_capreg_stack_frame_size_bits(CPUArchState *env, unsigned regnum)
+{
+    GPCapRegs *gpcrs = cheri_get_gpcrs(env);
+    sanity_check_capreg(gpcrs, regnum);
+    return gpcrs->decompressed[regnum].cr_stack_frame_size;
+}
+
+static inline uint64_t get_capreg_stack_frame_mask(CPUArchState *env, unsigned regnum)
+{
+    uint8_t size_bits = get_capreg_stack_frame_size_bits(env, regnum);
+    if (size_bits == 0) {
+        return 0x0;
+    } else {
+        return 0xffffffffffffffff << (5 + size_bits);
+    }
+}
+
 static inline void nullify_capreg(CPUArchState *env, unsigned regnum)
 {
     cheri_debug_assert(regnum != 0);

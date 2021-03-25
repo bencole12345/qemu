@@ -53,8 +53,9 @@
 #define _CC_MAX_TOP _CC_N(MAX_TOP)
 #define _CC_CURSOR_MASK _CC_N(CURSOR_MASK)
 // Check that the sizes of the individual fields match up
-_CC_STATIC_ASSERT_SAME(_CC_N(FIELD_EBT_SIZE) + _CC_N(FIELD_OTYPE_SIZE) + _CC_N(FIELD_FLAGS_SIZE) +
-                           _CC_N(FIELD_RESERVED_SIZE) + _CC_N(FIELD_HWPERMS_SIZE) + _CC_N(FIELD_UPERMS_SIZE),
+_CC_STATIC_ASSERT_SAME(_CC_N(FIELD_EBT_SIZE) + _CC_N(FIELD_OTYPE_SIZE) + _CC_N(FIELD_STACK_FRAME_SIZE_SIZE) +
+                           _CC_N(FIELD_FLAGS_SIZE) + _CC_N(FIELD_RESERVED_SIZE) + _CC_N(FIELD_HWPERMS_SIZE) +
+                           _CC_N(FIELD_UPERMS_SIZE),
                        _CC_ADDR_WIDTH);
 _CC_STATIC_ASSERT_SAME(_CC_N(FIELD_INTERNAL_EXPONENT_SIZE) + _CC_N(FIELD_EXP_ZERO_TOP_SIZE) +
                            _CC_N(FIELD_EXP_ZERO_BOTTOM_SIZE),
@@ -84,6 +85,12 @@ struct _cc_N(cap) {
     uint32_t cr_perms;     /* Permissions */
     uint32_t cr_uperms;    /* User Permissions */
     uint32_t cr_otype;     /* Object Type, 24/16 bits */
+    uint8_t cr_stack_frame_size;   /* Encoded stack frame size */
+    /* Original EBT from the decompressed capability. If you modify
+     * cursor/base/top, you must be sure to either recalculate this field to
+     * match or that the result is still representable, since this will be the
+     * EBT written out to memory */
+    uint32_t cr_ebt;     /* Exponent/Base/Top */
     uint8_t cr_flags;    /* Flags */
     uint8_t cr_reserved; /* Remaining hardware-reserved bits to preserve */
     uint8_t cr_tag;      /* Tag */
@@ -105,6 +112,7 @@ struct _cc_N(cap) {
     inline uint32_t software_permissions() const { return cr_uperms; }
     inline uint32_t permissions() const { return cr_perms; }
     inline uint32_t type() const { return cr_otype; }
+    inline uint8_t stack_frame_size() const { return cr_stack_frame_size; }
     inline bool is_sealed() const { return cr_otype != _CC_N(OTYPE_UNSEALED); }
     inline bool operator==(const _cc_N(cap) & other) const;
 #endif
@@ -358,6 +366,7 @@ static inline void _cc_N(decompress_raw)(_cc_addr_t pesbt, _cc_addr_t cursor, bo
     cdp->cr_perms = (uint32_t)_CC_EXTRACT_FIELD(pesbt, HWPERMS);
     cdp->cr_uperms = (uint32_t)_CC_EXTRACT_FIELD(pesbt, UPERMS);
     cdp->cr_otype = (uint32_t)_CC_EXTRACT_FIELD(pesbt, OTYPE);
+    cdp->cr_stack_frame_size = (uint8_t)_CC_EXTRACT_FIELD(pesbt, STACK_FRAME_SIZE);
     cdp->cr_flags = (uint8_t)_CC_EXTRACT_FIELD(pesbt, FLAGS);
     cdp->cr_reserved = (uint8_t)_CC_EXTRACT_FIELD(pesbt, RESERVED);
     cdp->cached_pesbt = pesbt;
@@ -404,6 +413,7 @@ static inline _cc_addr_t _cc_N(recompute_pesbt_non_ebt)(const _cc_cap_t* csp) {
  */
 static inline _cc_addr_t _cc_N(compress_raw)(const _cc_cap_t* csp) {
     _cc_debug_assert(!(csp->cr_tag && csp->cr_reserved) && "Unknown reserved bits set it tagged capability");
+    // TODO: Check this includes stack_frame_size
     _cc_addr_t pesbt = _CC_ENCODE_FIELD(csp->cr_uperms, UPERMS) | _CC_ENCODE_FIELD(csp->cr_perms, HWPERMS) |
                        _CC_ENCODE_FIELD(csp->cr_otype, OTYPE) | _CC_ENCODE_FIELD(csp->cr_reserved, RESERVED) |
                        _CC_ENCODE_FIELD(csp->cr_flags, FLAGS) | (csp->cached_pesbt & _CC_N(FIELD_EBT_MASK64));
@@ -459,6 +469,8 @@ static inline bool _cc_N(is_representable_cap_exact)(const _cc_cap_t* cap) {
     _cc_debug_assert(decompressed_cap.cr_otype == cap->cr_otype);
     _cc_debug_assert((decompressed_cap.cached_pesbt & _CC_N(FIELD_EBT_MASK64)) ==
                      (cap->cached_pesbt & _CC_N(FIELD_EBT_MASK64)));
+    _cc_debug_assert(decompressed_cap.cr_stack_frame_size == cap->cr_stack_frame_size);
+    _cc_debug_assert(decompressed_cap.cr_ebt == cap->cr_ebt);
     _cc_debug_assert(decompressed_cap.cr_flags == cap->cr_flags);
     _cc_debug_assert(decompressed_cap.cr_reserved == cap->cr_reserved);
     // If any of these fields changed then the capability is not representable:
@@ -855,6 +867,7 @@ static inline _cc_cap_t _cc_N(make_max_perms_cap)(_cc_addr_t base, _cc_addr_t cu
     creg.cr_perms = _CC_N(PERMS_ALL);
     creg.cr_uperms = _CC_N(UPERMS_ALL);
     creg.cr_otype = _CC_N(OTYPE_UNSEALED);
+    creg.cr_stack_frame_size = 0;
     creg.cr_tag = true;
     bool exact_input = false;
     creg.cached_pesbt = _cc_N(recompute_pesbt_non_ebt)(&creg);
