@@ -416,6 +416,13 @@ static inline bool trans_st_c_cap(DisasContext *ctx, arg_st_c_cap *a)
                                  &gen_helper_store_cap_via_cap);
 }
 
+static inline bool trans_c_st_c_cap(DisasContext *ctx, arg_c_st_c_cap *a)
+{
+    // Like ccsc but without an immediate, so we just use 0
+    return gen_cheri_cap_cap_imm(a->rs2, a->rs1, /*offset=*/0,
+                                 &gen_helper_check_store_cap_via_cap);
+}
+
 static inline bool trans_sc(DisasContext *ctx, arg_sc *a)
 {
     // RS2 is the value, RS1 is the capability
@@ -426,6 +433,21 @@ static inline bool trans_sc(DisasContext *ctx, arg_sc *a)
     }
     return gen_cheri_cap_cap_imm(a->rs2, a->rs1, /*offset=*/a->imm,
                                  &gen_helper_store_cap_via_cap);
+}
+
+static inline bool trans_ccsc(DisasContext *ctx, arg_ccsc *a)
+{
+    // By design, uses the same operand structure as the csc instruction
+
+    // RS2 is the value, RS1 is the capability
+    if (!ctx->capmode) {
+        // Without capmode we store relative to DDC (sc instructions)
+        return gen_cheri_cap_cap_int_imm(a->rs2, CHERI_EXC_REGNUM_DDC, a->rs1,
+                                         a->imm, &gen_helper_check_store_cap_via_cap);
+    }
+
+    return gen_cheri_cap_cap_imm(a->rs2, a->rs1, /*offset=*/a->imm,
+                                 &gen_helper_check_store_cap_via_cap);
 }
 
 // Atomic ops

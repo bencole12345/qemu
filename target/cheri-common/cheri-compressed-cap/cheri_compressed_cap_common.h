@@ -53,8 +53,9 @@
 #define _CC_MAX_TOP _CC_N(MAX_TOP)
 
 // CHeck that the sizes of the individual fields match up
-_CC_STATIC_ASSERT_SAME(_CC_N(FIELD_EBT_SIZE) + _CC_N(FIELD_OTYPE_SIZE) + _CC_N(FIELD_FLAGS_SIZE) +
-                           _CC_N(FIELD_RESERVED_SIZE) + _CC_N(FIELD_HWPERMS_SIZE) + _CC_N(FIELD_UPERMS_SIZE),
+_CC_STATIC_ASSERT_SAME(_CC_N(FIELD_EBT_SIZE) + _CC_N(FIELD_OTYPE_SIZE) + _CC_N(FIELD_STACK_FRAME_SIZE_SIZE) +
+                           _CC_N(FIELD_FLAGS_SIZE) + _CC_N(FIELD_RESERVED_SIZE) + _CC_N(FIELD_HWPERMS_SIZE) +
+                           _CC_N(FIELD_UPERMS_SIZE),
                        _CC_ADDR_WIDTH);
 _CC_STATIC_ASSERT_SAME(_CC_N(FIELD_INTERNAL_EXPONENT_SIZE) + _CC_N(FIELD_EXP_ZERO_TOP_SIZE) +
                            _CC_N(FIELD_EXP_ZERO_BOTTOM_SIZE),
@@ -75,6 +76,7 @@ struct _cc_N(cap) {
     uint32_t cr_perms;     /* Permissions */
     uint32_t cr_uperms;    /* User Permissions */
     uint32_t cr_otype;     /* Object Type, 24/16 bits */
+    uint8_t cr_stack_frame_size;   /* Encoded stack frame size */
     /* Original EBT from the decompressed capability. If you modify
      * cursor/base/top, you must be sure to either recalculate this field to
      * match or that the result is still representable, since this will be the
@@ -100,6 +102,7 @@ struct _cc_N(cap) {
     inline uint32_t software_permissions() const { return cr_uperms; }
     inline uint32_t permissions() const { return cr_perms; }
     inline uint32_t type() const { return cr_otype; }
+    inline uint8_t stack_frame_size() const { return cr_stack_frame_size; }
     inline bool is_sealed() const { return cr_otype != _CC_N(OTYPE_UNSEALED); }
     inline bool operator==(const _cc_N(cap) & other) const;
 #endif
@@ -110,8 +113,8 @@ typedef struct _cc_N(cap) _cc_N(cap_t);
 static inline bool _cc_N(exactly_equal)(struct _cc_N(cap) const* a, struct _cc_N(cap) const* b) {
     return a->cr_tag == b->cr_tag && a->_cr_cursor == b->_cr_cursor && a->cr_base == b->cr_base &&
            a->_cr_top == b->_cr_top && a->cr_perms == b->cr_perms && a->cr_uperms == b->cr_uperms &&
-           a->cr_otype == b->cr_otype && a->cr_ebt == b->cr_ebt && a->cr_flags == b->cr_flags &&
-           a->cr_reserved == b->cr_reserved;
+           a->cr_otype == b->cr_otype && a->cr_stack_frame_size == b->cr_stack_frame_size &&
+           a->cr_ebt == b->cr_ebt && a->cr_flags == b->cr_flags && a->cr_reserved == b->cr_reserved;
 }
 
 /* Returns the index of the most significant bit set in x */
@@ -326,6 +329,7 @@ static inline void _cc_N(decompress_raw)(_cc_addr_t pesbt, _cc_addr_t cursor, bo
     cdp->cr_perms = (uint32_t)_CC_EXTRACT_FIELD(pesbt, HWPERMS);
     cdp->cr_uperms = (uint32_t)_CC_EXTRACT_FIELD(pesbt, UPERMS);
     cdp->cr_otype = (uint32_t)_CC_EXTRACT_FIELD(pesbt, OTYPE);
+    cdp->cr_stack_frame_size = (uint8_t)_CC_EXTRACT_FIELD(pesbt, STACK_FRAME_SIZE);
     cdp->cr_flags = (uint8_t)_CC_EXTRACT_FIELD(pesbt, FLAGS);
     cdp->cr_reserved = (uint8_t)_CC_EXTRACT_FIELD(pesbt, RESERVED);
     cdp->cr_ebt = (uint32_t)_CC_EXTRACT_FIELD(pesbt, EBT);
@@ -355,7 +359,9 @@ static inline bool _cc_N(is_cap_sealed)(const _cc_cap_t* cp) { return cp->cr_oty
 static inline _cc_addr_t _cc_N(compress_raw)(const _cc_cap_t* csp) {
     _cc_debug_assert(!(csp->cr_tag && csp->cr_reserved) && "Unknown reserved bits set it tagged capability");
     _cc_addr_t pesbt = _CC_ENCODE_FIELD(csp->cr_uperms, UPERMS) | _CC_ENCODE_FIELD(csp->cr_perms, HWPERMS) |
-                       _CC_ENCODE_FIELD(csp->cr_otype, OTYPE) | _CC_ENCODE_FIELD(csp->cr_reserved, RESERVED) |
+                       _CC_ENCODE_FIELD(csp->cr_otype, OTYPE) |
+                       _CC_ENCODE_FIELD(csp->cr_stack_frame_size, STACK_FRAME_SIZE) |
+                       _CC_ENCODE_FIELD(csp->cr_reserved, RESERVED) |
                        _CC_ENCODE_FIELD(csp->cr_flags, FLAGS) | _CC_ENCODE_FIELD(csp->cr_ebt, EBT);
     return pesbt;
 }
@@ -407,6 +413,7 @@ static inline bool _cc_N(is_representable_cap_exact)(const _cc_cap_t* cap) {
     _cc_debug_assert(decompressed_cap.cr_perms == cap->cr_perms);
     _cc_debug_assert(decompressed_cap.cr_uperms == cap->cr_uperms);
     _cc_debug_assert(decompressed_cap.cr_otype == cap->cr_otype);
+    _cc_debug_assert(decompressed_cap.cr_stack_frame_size == cap->cr_stack_frame_size);
     _cc_debug_assert(decompressed_cap.cr_ebt == cap->cr_ebt);
     _cc_debug_assert(decompressed_cap.cr_flags == cap->cr_flags);
     _cc_debug_assert(decompressed_cap.cr_reserved == cap->cr_reserved);
@@ -732,6 +739,7 @@ static inline _cc_cap_t _cc_N(make_max_perms_cap)(_cc_addr_t base, _cc_addr_t cu
     creg.cr_perms = _CC_N(PERMS_ALL);
     creg.cr_uperms = _CC_N(UPERMS_ALL);
     creg.cr_otype = _CC_N(OTYPE_UNSEALED);
+    creg.cr_stack_frame_size = 0;
     creg.cr_tag = true;
     bool exact_input = false;
     creg.cr_ebt = _cc_N(compute_ebt)(creg.cr_base, creg._cr_top, NULL, &exact_input);

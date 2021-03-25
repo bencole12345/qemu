@@ -1112,6 +1112,24 @@ void CHERI_HELPER_IMPL(store_cap_via_cap(CPUArchState *env, uint32_t cs,
     store_cap_to_memory(env, cs, addr, _host_return_address);
 }
 
+void CHERI_HELPER_IMPL(check_store_cap_via_cap(CPUArchState *env, uint32_t cs,
+                                               uint32_t cb, target_ulong offset))
+{
+    GET_HOST_RETPC();
+
+    uint64_t cb_address = get_capreg_cursor(env, cb);
+    uint64_t cb_mask = get_capreg_stack_frame_mask(env, cb);
+    uint64_t cb_lifetime = cb_address & cb_mask;
+
+    uint64_t cs_address = get_capreg_cursor(env, cs);
+    uint64_t cs_mask = get_capreg_stack_frame_mask(env, cs);
+    uint64_t cs_lifetime = cs_address & cs_mask;
+
+    if (cb_lifetime > cs_lifetime) {
+        raise_cheri_exception(env, CapEx_StackLifetimeViolation, cb);
+    }
+}
+
 static inline bool
 cheri_tag_prot_clear_or_trap(CPUArchState *env, target_ulong va,
                              int cb, const cap_register_t* cbp,
