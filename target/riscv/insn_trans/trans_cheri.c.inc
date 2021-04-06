@@ -210,6 +210,7 @@ TRANSLATE_CAP_CAP_INT(cincoffset)
 TRANSLATE_CAP_CAP_INT(csetaddr)
 TRANSLATE_CAP_CAP_INT(csetbounds)
 TRANSLATE_CAP_CAP_INT(csetboundsexact)
+// TRANSLATE_CAP_CAP_INT(csetstackframesize)
 TRANSLATE_CAP_CAP_INT(csetflags)
 TRANSLATE_CAP_CAP_INT(csetoffset)
 
@@ -219,7 +220,7 @@ TRANSLATE_INT_CAP_CAP(ctestsubset)
 TRANSLATE_INT_CAP_CAP(cseqx)
 TRANSLATE_INT_CAP_CAP(ctoptr)
 
-// CIncOffsetImm/CSetBoundsImm:
+// CIncOffsetImm/CSetBoundsImm/CSetStackFrameSizeImm:
 typedef void(cheri_cap_cap_imm_helper)(TCGv_env, TCGv_i32, TCGv_i32, TCGv);
 static inline bool gen_cheri_cap_cap_imm(int cd, int cs1, target_long imm,
                                          cheri_cap_cap_imm_helper *gen_func)
@@ -245,6 +246,12 @@ static bool trans_csetboundsimm(DisasContext *ctx, arg_cincoffsetimm *a)
 {
     tcg_debug_assert(a->imm >= 0);
     return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csetbounds);
+}
+
+static bool trans_csetstackframesizeimm(DisasContext *ctx, arg_cincoffsetimm *a)
+{
+    tcg_debug_assert(a->imm >= 0);
+    return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csetstackframesizeimm);
 }
 
 /// Control-flow instructions
