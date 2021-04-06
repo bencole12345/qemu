@@ -842,6 +842,15 @@ void CHERI_HELPER_IMPL(csetboundsexact(CPUArchState *env, uint32_t cd,
     do_setbounds(true, env, cd, cb, rt, GETPC());
 }
 
+void CHERI_HELPER_IMPL(csetstackframesizeimm(CPUArchState *env, uint32_t cd,
+                                             uint32_t cb, target_ulong size))
+{
+    const cap_register_t *cbp = get_readonly_capreg(env, cb);
+    cap_register_t new_cap = *cbp;
+    new_cap.cr_stack_frame_size = 0b111 & size;
+    update_capreg(env, cd, &new_cap);
+}
+
 void CHERI_HELPER_IMPL(csetflags(CPUArchState *env, uint32_t cd, uint32_t cb,
                                  target_ulong flags))
 {
@@ -1117,13 +1126,28 @@ void CHERI_HELPER_IMPL(check_store_cap_via_cap(CPUArchState *env, uint32_t cs,
 {
     GET_HOST_RETPC();
 
-    uint64_t cb_address = get_capreg_cursor(env, cb);
-    uint64_t cb_mask = get_capreg_stack_frame_mask(env, cb);
-    uint64_t cb_lifetime = cb_address & cb_mask;
+    // Non-stack source capabilities are unconstrained
+    if (is_heap_capability(env, cs)) {
+        return;
+    }
+    
+    assert(get_capreg_stack_frame_size_bits(env, cs) > 0);
+
+    // Stack capabilities may not leave the stack
+    if (is_heap_capability(env, cb)) {
+        raise_cheri_exception(env, CapEx_StackLifetimeViolation, cs);
+        return;
+    }
+
+    assert(get_capreg_stack_frame_size_bits(env, cb) > 0);
 
     uint64_t cs_address = get_capreg_cursor(env, cs);
     uint64_t cs_mask = get_capreg_stack_frame_mask(env, cs);
     uint64_t cs_lifetime = cs_address & cs_mask;
+
+    uint64_t cb_address = get_capreg_cursor(env, cb);
+    uint64_t cb_mask = get_capreg_stack_frame_mask(env, cb);
+    uint64_t cb_lifetime = cb_address & cb_mask;
 
     if (cb_lifetime > cs_lifetime) {
         raise_cheri_exception(env, CapEx_StackLifetimeViolation, cb);

@@ -364,19 +364,29 @@ static inline uint32_t get_capreg_hwperms(CPUArchState *env, unsigned regnum)
 
 static inline uint8_t get_capreg_stack_frame_size_bits(CPUArchState *env, unsigned regnum)
 {
-    GPCapRegs *gpcrs = cheri_get_gpcrs(env);
-    sanity_check_capreg(gpcrs, regnum);
-    return gpcrs->decompressed[regnum].cr_stack_frame_size;
+    const cap_register_t *reg = get_readonly_capreg(env, regnum);
+    return reg->cr_stack_frame_size;
 }
 
 static inline uint64_t get_capreg_stack_frame_mask(CPUArchState *env, unsigned regnum)
 {
-    uint8_t size_bits = get_capreg_stack_frame_size_bits(env, regnum);
-    if (size_bits == 0) {
-        return 0x0;
-    } else {
-        return 0xffffffffffffffff << (5 + size_bits);
-    }
+    uint8_t frame_size_bits = get_capreg_stack_frame_size_bits(env, regnum);
+    assert(frame_size_bits >= 0 && "No mask for non-stack capability addresses exists");
+    return 0xffffffffffffffff << (5 + frame_size_bits);
+}
+
+static inline int is_stack_capability(CPUArchState *env, unsigned regnum)
+{
+    uint8_t frame_size_bits = get_capreg_stack_frame_size_bits(env, regnum);
+    assert(frame_size_bits <= 0b111 && "Frame size bits out of valid range");
+    return (frame_size_bits != 0);
+}
+
+static inline int is_heap_capability(CPUArchState *env, unsigned regnum)
+{
+    uint8_t frame_size_bits = get_capreg_stack_frame_size_bits(env, regnum);
+    assert(frame_size_bits <= 0b111 && "Frame size bits out of valid range");
+    return (frame_size_bits == 0);
 }
 
 static inline void nullify_capreg(CPUArchState *env, unsigned regnum)

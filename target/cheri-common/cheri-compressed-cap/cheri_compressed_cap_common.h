@@ -382,6 +382,7 @@ static inline void _cc_N(decompress_raw)(_cc_addr_t pesbt, _cc_addr_t cursor, bo
         _cc_debug_assert(cdp->cr_base <= cdp->_cr_top);
 #endif
         _cc_debug_assert(cdp->cr_reserved == 0);
+        _cc_debug_assert(cdp->cr_stack_frame_size <= 7);
     }
 }
 
@@ -793,7 +794,9 @@ static inline bool _cc_N(setbounds_impl)(_cc_cap_t* cap, _cc_addr_t req_base, _c
 
     // TODO: find a faster way to compute top and bot:
     const _cc_addr_t pesbt = _CC_ENCODE_FIELD(0, UPERMS) | _CC_ENCODE_FIELD(0, HWPERMS) |
-                             _CC_ENCODE_FIELD(_CC_N(OTYPE_UNSEALED), OTYPE) | _CC_ENCODE_FIELD(new_ebt, EBT);
+                             _CC_ENCODE_FIELD(_CC_N(OTYPE_UNSEALED), OTYPE) |
+                             _CC_ENCODE_FIELD(cap->cr_stack_frame_size, STACK_FRAME_SIZE) |
+                             _CC_ENCODE_FIELD(new_ebt, EBT);
     _cc_cap_t new_cap;
     _cc_N(decompress_raw)(pesbt, cursor, cap->cr_tag, &new_cap);
     _cc_addr_t new_base = new_cap.cr_base;
@@ -806,6 +809,7 @@ static inline bool _cc_N(setbounds_impl)(_cc_cap_t* cap, _cc_addr_t req_base, _c
         exact = false;
 #endif
 
+    uint8_t new_stack_frame_size = new_cap.cr_stack_frame_size;
     if (exact) {
         _cc_debug_assert(new_base == req_base && "Should be exact");
         _cc_debug_assert(new_top == req_top && "Should be exact");
@@ -823,6 +827,8 @@ static inline bool _cc_N(setbounds_impl)(_cc_cap_t* cap, _cc_addr_t req_base, _c
     cap->cr_bounds_valid = new_cap.cr_bounds_valid;
 #endif
 
+    cap->cr_stack_frame_size = new_stack_frame_size;
+    // TODO: update pesbt?
     //  let newCap = {cap with address=base, E=to_bits(6, if incE then e + 1 else e), B=Bbits, T=Tbits, internal_e=ie};
     //  (exact, newCap)
     return exact;
