@@ -123,6 +123,15 @@ target_ulong CHERI_HELPER_IMPL(cgetflags(CPUArchState *env, uint32_t cb))
     return (target_ulong)get_readonly_capreg(env, cb)->cr_flags;
 }
 
+target_ulong CHERI_HELPER_IMPL(cgfs(CPUArchState *env, uint32_t cb))
+{
+    /*
+     * CGFS: Capability Get Frame Size - Move frame size bits to a
+     * General-Purpose Register.
+     */
+    return (target_ulong)get_readonly_capreg(env, cb)->cr_stack_frame_size;
+}
+
 target_ulong CHERI_HELPER_IMPL(cgetlen(CPUArchState *env, uint32_t cb))
 {
     /*

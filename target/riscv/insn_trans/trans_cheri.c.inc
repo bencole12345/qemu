@@ -157,6 +157,7 @@ static inline bool gen_cheri_int_cap_cap(DisasContext *ctx, int rd, int cs1,
 TRANSLATE_CGET(cgetaddr)
 TRANSLATE_CGET(cgetbase)
 TRANSLATE_CGET(cgetflags)
+TRANSLATE_CGET(cgfs)
 TRANSLATE_CGET(cgetlen)
 TRANSLATE_CGET(cgetoffset)
 TRANSLATE_CGET(cgetperm)
