@@ -842,8 +842,8 @@ void CHERI_HELPER_IMPL(csetboundsexact(CPUArchState *env, uint32_t cd,
     do_setbounds(true, env, cd, cb, rt, GETPC());
 }
 
-void CHERI_HELPER_IMPL(csetstackframesizeimm(CPUArchState *env, uint32_t cd,
-                                             uint32_t cb, target_ulong size))
+void CHERI_HELPER_IMPL(csfs(CPUArchState *env, uint32_t cd,
+                            uint32_t cb, target_ulong size))
 {
     const cap_register_t *cbp = get_readonly_capreg(env, cb);
     cap_register_t new_cap = *cbp;
