@@ -91,7 +91,7 @@ DEF_HELPER_4(cjalr, void, env, i32, i32, tl)
 DEF_HELPER_4(csetaddr, void, env, i32, i32, tl)
 DEF_HELPER_4(csetbounds, void, env, i32, i32, tl)
 DEF_HELPER_4(csetboundsexact, void, env, i32, i32, tl)
-DEF_HELPER_4(csetstackframesizeimm, void, env, i32, i32, tl)
+DEF_HELPER_4(csfs, void, env, i32, i32, tl)
 DEF_HELPER_4(csetflags, void, env, i32, i32, tl)
 DEF_HELPER_4(csetoffset, void, env, i32, i32, tl)
 

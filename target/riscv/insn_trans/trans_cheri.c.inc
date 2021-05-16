@@ -222,7 +222,7 @@ TRANSLATE_INT_CAP_CAP(ctestsubset)
 TRANSLATE_INT_CAP_CAP(cseqx)
 TRANSLATE_INT_CAP_CAP(ctoptr)
 
-// CIncOffsetImm/CSetBoundsImm/CSetStackFrameSizeImm:
+// CIncOffsetImm/CSetBoundsImm/CSFS:
 typedef void(cheri_cap_cap_imm_helper)(TCGv_env, TCGv_i32, TCGv_i32, TCGv);
 static inline bool gen_cheri_cap_cap_imm(int cd, int cs1, target_long imm,
                                          cheri_cap_cap_imm_helper *gen_func)
@@ -250,10 +250,10 @@ static bool trans_csetboundsimm(DisasContext *ctx, arg_cincoffsetimm *a)
     return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csetbounds);
 }
 
-static bool trans_csetstackframesizeimm(DisasContext *ctx, arg_cincoffsetimm *a)
+static bool trans_csfs(DisasContext *ctx, arg_cincoffsetimm *a)
 {
     tcg_debug_assert(a->imm >= 0);
-    return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csetstackframesizeimm);
+    return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csfs);
 }
 
 /// Control-flow instructions
@@ -439,13 +439,6 @@ static inline bool trans_st_c_cap(DisasContext *ctx, arg_st_c_cap *a)
     // No immediate available for sccap
     return gen_cheri_cap_cap_imm(a->rs2, a->rs1, /*offset=*/0,
                                  &gen_helper_store_cap_via_cap);
-}
-
-static inline bool trans_c_st_c_cap(DisasContext *ctx, arg_c_st_c_cap *a)
-{
-    // Like ccsc but without an immediate, so we just use 0
-    return gen_cheri_cap_cap_imm(a->rs2, a->rs1, /*offset=*/0,
-                                 &gen_helper_check_store_cap_via_cap);
 }
 
 static inline bool trans_sc(DisasContext *ctx, arg_sc *a)

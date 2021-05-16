@@ -40,7 +40,6 @@ cspecialrw         0000001  ..... ..... 000 ..... 1011011 @r
 # 0000010-0000111 unused
 csetbounds         0001000  ..... ..... 000 ..... 1011011 @r
 csetboundsexact    0001001  ..... ..... 000 ..... 1011011 @r
-# csetstackframesize 0001010  ..... ..... 000 ..... 1011011 @r
 cseal              0001011  ..... ..... 000 ..... 1011011 @r
 cunseal            0001100  ..... ..... 000 ..... 1011011 @r
 candperm           0001101  ..... ..... 000 ..... 1011011 @r
@@ -105,7 +104,7 @@ cinvoke  1111110  ..... ..... 000 00001 1011011 @r_2source
 
 cincoffsetimm         ............     ..... 001 ..... 1011011 @i
 csetboundsimm         ............     ..... 010 ..... 1011011 @i_unsigned
-csetstackframesizeimm ............     ..... 011 ..... 1011011 @i_unsigned
+csfs                  ............     ..... 011 ..... 1011011 @i_unsigned
 
 ### Memory Loads (including Load-Reserved) with Explicit Address Type
 ld_b_ddc       1111101  00000 ..... 000 ..... 1011011 @r2
