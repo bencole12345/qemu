@@ -854,6 +854,10 @@ void CHERI_HELPER_IMPL(csetboundsexact(CPUArchState *env, uint32_t cd,
 void CHERI_HELPER_IMPL(csfs(CPUArchState *env, uint32_t cd,
                             uint32_t cb, target_ulong size))
 {
+    /*
+     * CSFS: Capability Set Frame Size - sets the frame size bits of a
+     * capability.
+     */
     const cap_register_t *cbp = get_readonly_capreg(env, cb);
     cap_register_t new_cap = *cbp;
     new_cap.cr_stack_frame_size = 0b111 & size;
@@ -1139,7 +1143,7 @@ void CHERI_HELPER_IMPL(check_store_cap_via_cap(CPUArchState *env, uint32_t cs,
     if (is_heap_capability(env, cs)) {
         return;
     }
-    
+
     assert(get_capreg_stack_frame_size_bits(env, cs) > 0);
 
     // Stack capabilities may not leave the stack

@@ -80,21 +80,16 @@ struct _cc_N(cap) {
     _cc_addr_t _cr_cursor;
     _cc_addr_t cached_pesbt;
 #endif
-    _cc_length_t _cr_top;  /* Capability top */
-    _cc_addr_t cr_base;    /* Capability base addr */
-    uint32_t cr_perms;     /* Permissions */
-    uint32_t cr_uperms;    /* User Permissions */
-    uint32_t cr_otype;     /* Object Type, 24/16 bits */
-    uint8_t cr_stack_frame_size;   /* Encoded stack frame size */
-    /* Original EBT from the decompressed capability. If you modify
-     * cursor/base/top, you must be sure to either recalculate this field to
-     * match or that the result is still representable, since this will be the
-     * EBT written out to memory */
-    uint32_t cr_ebt;     /* Exponent/Base/Top */
-    uint8_t cr_flags;    /* Flags */
-    uint8_t cr_reserved; /* Remaining hardware-reserved bits to preserve */
-    uint8_t cr_tag;      /* Tag */
-    uint8_t cr_bounds_valid; /* Set if bounds decode was given an invalid cap */
+    _cc_length_t _cr_top;           /* Capability top */
+    _cc_addr_t cr_base;             /* Capability base addr */
+    uint32_t cr_perms;              /* Permissions */
+    uint32_t cr_uperms;             /* User Permissions */
+    uint32_t cr_otype;              /* Object Type, 24/16 bits */
+    uint8_t cr_stack_frame_size;    /* Encoded stack frame size */
+    uint8_t cr_flags;               /* Flags */
+    uint8_t cr_reserved;            /* Remaining hardware-reserved bits to preserve */
+    uint8_t cr_tag;                 /* Tag */
+    uint8_t cr_bounds_valid;        /* Set if bounds decode was given an invalid cap */
 #ifdef __cplusplus
     inline _cc_addr_t base() const { return cr_base; }
     inline _cc_addr_t address() const { return _cr_cursor; }
@@ -414,9 +409,10 @@ static inline _cc_addr_t _cc_N(recompute_pesbt_non_ebt)(const _cc_cap_t* csp) {
  */
 static inline _cc_addr_t _cc_N(compress_raw)(const _cc_cap_t* csp) {
     _cc_debug_assert(!(csp->cr_tag && csp->cr_reserved) && "Unknown reserved bits set it tagged capability");
-    // TODO: Check this includes stack_frame_size
     _cc_addr_t pesbt = _CC_ENCODE_FIELD(csp->cr_uperms, UPERMS) | _CC_ENCODE_FIELD(csp->cr_perms, HWPERMS) |
-                       _CC_ENCODE_FIELD(csp->cr_otype, OTYPE) | _CC_ENCODE_FIELD(csp->cr_reserved, RESERVED) |
+                       _CC_ENCODE_FIELD(csp->cr_otype, OTYPE) |
+                       _CC_ENCODE_FIELD(csp->cr_stack_frame_size, STACK_FRAME_SIZE) |
+                       _CC_ENCODE_FIELD(csp->cr_reserved, RESERVED) |
                        _CC_ENCODE_FIELD(csp->cr_flags, FLAGS) | (csp->cached_pesbt & _CC_N(FIELD_EBT_MASK64));
     return pesbt;
 }
@@ -471,7 +467,6 @@ static inline bool _cc_N(is_representable_cap_exact)(const _cc_cap_t* cap) {
     _cc_debug_assert((decompressed_cap.cached_pesbt & _CC_N(FIELD_EBT_MASK64)) ==
                      (cap->cached_pesbt & _CC_N(FIELD_EBT_MASK64)));
     _cc_debug_assert(decompressed_cap.cr_stack_frame_size == cap->cr_stack_frame_size);
-    _cc_debug_assert(decompressed_cap.cr_ebt == cap->cr_ebt);
     _cc_debug_assert(decompressed_cap.cr_flags == cap->cr_flags);
     _cc_debug_assert(decompressed_cap.cr_reserved == cap->cr_reserved);
     // If any of these fields changed then the capability is not representable:
@@ -828,7 +823,6 @@ static inline bool _cc_N(setbounds_impl)(_cc_cap_t* cap, _cc_addr_t req_base, _c
 #endif
 
     cap->cr_stack_frame_size = new_stack_frame_size;
-    // TODO: update pesbt?
     //  let newCap = {cap with address=base, E=to_bits(6, if incE then e + 1 else e), B=Bbits, T=Tbits, internal_e=ie};
     //  (exact, newCap)
     return exact;

@@ -267,6 +267,7 @@ enum {
 // Whatever NULL would encode to is this constant. We mask on store/load so this
 // invisibly keeps null 0 whatever we choose it to be.
 // #define CC128_NULL_XOR_MASK 0x1ffff8000000
+
 #ifdef CC_IS_MORELLO
 #define CC128_NULL_XOR_MASK (CC128_NULL_PESBT)
 #else
