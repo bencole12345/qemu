@@ -1150,28 +1150,8 @@ void CHERI_HELPER_IMPL(check_store_cap_via_cap(CPUArchState *env, uint32_t cs,
 {
     GET_HOST_RETPC();
 
-    // Non-stack source capabilities are unconstrained
-    if (is_heap_capability(env, cs)) {
-        return;
-    }
-
-    assert(get_capreg_stack_frame_size_bits(env, cs) > 0);
-
-    // Stack capabilities may not leave the stack
-    if (is_heap_capability(env, cb)) {
-        raise_cheri_exception(env, CapEx_StackLifetimeViolation, cs);
-        return;
-    }
-
-    assert(get_capreg_stack_frame_size_bits(env, cb) > 0);
-
-    uint64_t cs_address = get_capreg_cursor(env, cs);
-    uint64_t cs_mask = get_capreg_stack_frame_mask(env, cs);
-    uint64_t cs_lifetime = cs_address & cs_mask;
-
-    uint64_t cb_address = get_capreg_cursor(env, cb);
-    uint64_t cb_mask = get_capreg_stack_frame_mask(env, cb);
-    uint64_t cb_lifetime = cb_address & cb_mask;
+    uint64_t cs_lifetime = get_capreg_implied_lifetime(env, cs);
+    uint64_t cb_lifetime = get_capreg_implied_lifetime(env, cb);
 
     if (cb_lifetime > cs_lifetime) {
         raise_cheri_exception(env, CapEx_StackLifetimeViolation, cb);
