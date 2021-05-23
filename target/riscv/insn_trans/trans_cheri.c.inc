@@ -158,7 +158,6 @@ TRANSLATE_INT_CAP(cgetaddr)
 TRANSLATE_INT_CAP(cgetbase)
 TRANSLATE_INT_CAP(cgetflags)
 TRANSLATE_INT_CAP(cgfs)
-TRANSLATE_INT_CAP(cgetframebase)
 TRANSLATE_INT_CAP(cgetlen)
 TRANSLATE_INT_CAP(cgetoffset)
 TRANSLATE_INT_CAP(cgetperm)
@@ -255,6 +254,11 @@ static bool trans_csfs(DisasContext *ctx, arg_cincoffsetimm *a)
 {
     tcg_debug_assert(a->imm >= 0);
     return gen_cheri_cap_cap_imm(a->rd, a->rs1, a->imm, &gen_helper_csfs);
+}
+
+static bool trans_cgetframebase(DisasContext *ctx, arg_cgetframebase *a)
+{
+    return gen_cheri_cap_cap(a->rd, a->rs1, &gen_helper_cgetframebase);
 }
 
 /// Control-flow instructions

@@ -132,17 +132,6 @@ target_ulong CHERI_HELPER_IMPL(cgfs(CPUArchState *env, uint32_t cb))
     return (target_ulong)get_readonly_capreg(env, cb)->cr_stack_frame_size;
 }
 
-target_ulong CHERI_HELPER_IMPL(cgetframebase(CPUArchState *env, uint32_t cb))
-{
-    /*
-     * CGetFrameBase: Capability Get [Stack] Frame Base - Compute the start
-     * address of the stack frame pointed to by a capability.
-     *
-     * Note: for non-stack capabilities this will just be 0x0.
-     */
-    return (target_ulong)get_capreg_implied_lifetime(env, cb);
-}
-
 target_ulong CHERI_HELPER_IMPL(cgetlen(CPUArchState *env, uint32_t cb))
 {
     /*
@@ -872,6 +861,21 @@ void CHERI_HELPER_IMPL(csfs(CPUArchState *env, uint32_t cd,
     const cap_register_t *cbp = get_readonly_capreg(env, cb);
     cap_register_t new_cap = *cbp;
     new_cap.cr_stack_frame_size = 0b111 & size;
+    update_capreg(env, cd, &new_cap);
+}
+
+void CHERI_HELPER_IMPL(cgetframebase(CPUArchState *env, uint32_t cb))
+{
+    /*
+     * CGetFrameBase: Capability Get [Stack] Frame Base - Obtain a capability
+     * to the beginning of a function's stack frame.
+     *
+     * Note: for non-stack capabilities this will simply point to the
+     * address 0x0.
+     */
+    const cap_register_t *cbp = get_readonly_capreg(env, cb);
+    cap_register_t new_cap = *cbp;
+    new_cap.cr_address = get_capreg_implied_lifetime(env, cb);
     update_capreg(env, cd, &new_cap);
 }
 
