@@ -374,16 +374,18 @@ static inline uint64_t get_capreg_implied_lifetime(CPUArchState *env, unsigned r
     uint64_t frame_start;
     if (frame_size_bits == 0) {
         // Heap address, so give it the maximal lifetime
-        frame_start = 0x0;
+        frame_start = 0x7fffffffffffffff;
     } else {
         // Determine the bottom of the stack frame
         uint64_t address = get_capreg_cursor(env, regnum);
-        uint64_t mask = 0xffffffffffffffc0 << frame_size_bits;
+        uint64_t mask = 0xffffffffffffffff << (frame_size_bits + 5);
         uint64_t masked = address & mask;
         // Add the correction to find the top of the stack frame. If a large
         // frame is followed by a small one, their ends may alias, but their
         // beginnings never will.
-        frame_start = masked + (0x0000000000000040 << frame_size_bits);
+        // frame_start = masked + (0x0000000000000040 << frame_size_bits);
+        // frame_start = masked + (0x1 << (frame_size_bits + 5));
+        frame_start = masked + (0x1 << (frame_size_bits + 4));
     }
     return frame_start;
 }

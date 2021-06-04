@@ -45,6 +45,10 @@
 #include "cheri-helper-utils.h"
 #include "cheri_tagmem.h"
 
+// TODO: Remove
+#include <assert.h>
+#include <stdio.h>
+
 #ifndef TARGET_CHERI
 #error "This file should only be compiled for CHERI"
 #endif
@@ -864,7 +868,7 @@ void CHERI_HELPER_IMPL(csfs(CPUArchState *env, uint32_t cd,
     update_capreg(env, cd, &new_cap);
 }
 
-void CHERI_HELPER_IMPL(cgetframebase(CPUArchState *env, uint32_t cb))
+void CHERI_HELPER_IMPL(cgetframebase(CPUArchState *env, uint32_t cd, uint32_t cs))
 {
     /*
      * CGetFrameBase: Capability Get [Stack] Frame Base - Obtain a capability
@@ -873,10 +877,24 @@ void CHERI_HELPER_IMPL(cgetframebase(CPUArchState *env, uint32_t cb))
      * Note: for non-stack capabilities this will simply point to the
      * address 0x0.
      */
-    const cap_register_t *cbp = get_readonly_capreg(env, cb);
-    cap_register_t new_cap = *cbp;
-    new_cap.cr_address = get_capreg_implied_lifetime(env, cb);
-    update_capreg(env, cd, &new_cap);
+    // GET_HOST_RETPC();
+
+    // FILE *fp = fopen("/home/ben/cgetframebase_debug_log.txt", "w");
+    // fprintf(fp, "Original address: %p\n", (void*)get_capreg_cursor(env, cs));
+
+
+    // Work out the new address
+    // const cap_register_t *csp = get_readonly_capreg(env, cs);
+    target_ulong new_address = get_capreg_implied_lifetime(env, cs);
+    
+    // Update the cap (this is similar to the csetaddr implementation)
+    target_ulong cursor = get_capreg_cursor(env, cs);
+    target_ulong diff = new_address - cursor;
+    cincoffset_impl(env, cd, cs, diff, GETPC(), OOB_INFO(cgetframebase));
+
+    // fprintf(fp, "Updated address: %p\n", (void*)get_capreg_cursor(env, cd));
+
+    // fclose(fp);
 }
 
 void CHERI_HELPER_IMPL(csetflags(CPUArchState *env, uint32_t cd, uint32_t cb,
@@ -1158,7 +1176,8 @@ void CHERI_HELPER_IMPL(check_store_cap_via_cap(CPUArchState *env, uint32_t cs,
     uint64_t cb_lifetime = get_capreg_implied_lifetime(env, cb);
 
     if (cb_lifetime > cs_lifetime) {
-        raise_cheri_exception(env, CapEx_StackLifetimeViolation, cb);
+        // raise_cheri_exception(env, CapEx_StackLifetimeViolation, cb);
+        raise_cheri_exception(env, CapEx_StackLifetimeViolation, cs);
     }
 }
 
